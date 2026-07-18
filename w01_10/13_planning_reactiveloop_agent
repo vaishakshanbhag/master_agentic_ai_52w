@@ -1,0 +1,94 @@
+import os
+from dotenv import load_dotenv
+# from openai import OpenAI
+from langchain_core.tools import Tool
+from langchain_openai import ChatOpenAI
+
+load_dotenv()
+
+def calculator(expr:str):
+    try:
+        return str(eval(expr))
+    except Exception as e:
+        return f"Error: {e}"
+ 
+kb = {
+    "LangChain": "A framework for building LLM-powered agents.",
+    "RAG": "Retrieval-Augmented Generation, combining retrieval + generation.",
+    "CrewAI": "A framework for multi-agent orchestration."
+}
+def lookup(term:str):
+    return kb.get(term, f"No entry for {term}")
+ 
+tools = [
+    Tool(name="Calculator", func=calculator, description="Do math calculations."),
+    Tool(name="Lookup", func=lookup, description="Look up terms in knowledge base."),
+]
+
+# def extract_output(value):
+#     """
+#     Extract the output from the agent's response.
+#     """
+#     if isinstance(value, dict):
+#             if "output" in value:
+#                 return value["output"]
+#             if "messages" in value and value["messages"]:
+#                 last_message = value["messages"][-1]
+#                 if hasattr(last_message, "content"):
+#                     return last_message.content
+#                 if isinstance(last_message, dict):
+#                     return last_message.get("content", str(last_message))
+#             return str(value)
+#         if hasattr(value, "content"):
+#             return value.content
+#         return str(value)
+# # Reactive Agent
+# # A simple loop: LLM decides tool -> executes -> answers.
+# from langchain.agents import create_agent
+# from langchain_core.messages import HumanMessage
+
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
+# reactive_agent = create_agent(
+#     llm,
+#     tools,
+#     system_prompt="You are a helpful assistant that can use tools to answer questions.",
+# )
+
+# result = reactive_agent.invoke(
+#     {"messages": [HumanMessage(content="What is 15*122 and also explain what LangChain is?")]}
+# )
+# print(extract_output(result))
+
+#Planning Agent
+#Planning = break request into subtasks first, then execute.
+
+from langchain_core.prompts import PromptTemplate
+
+plan_prompt = PromptTemplate.from_template("""
+You are a planning agent. Break the following request into subtasks before answering:
+{task}
+Return plan as:
+1. Subtask A
+2. Subtask B
+""")
+
+
+def planning_agent(task: str):
+    prompt_value = plan_prompt.invoke({"task": task})
+    response = llm.invoke(prompt_value)
+    plan = response.content if hasattr(response, "content") else str(response)
+    print("Plan:")
+    print(plan)
+
+    # crude execution: match keyword to tool
+    answer_parts = []
+    if "Calculate" in plan or "Compute" in plan:
+        answer_parts.append("Calc: " + calculator("15*4"))
+    if "Research" in plan or "Explain" in plan or "Lookup" in plan:
+        answer_parts.append("Lookup: " + lookup("LangChain"))
+    return "\n".join(answer_parts)
+
+
+print("\n--- Planning Agent ---")
+# print(planning_agent("What is 15*4 and also explain what LangChain is?"))
+print(planning_agent("Tell me what CrewAI is, then compute 12/4."))
