@@ -138,6 +138,7 @@ An agent that remembers past interactions and blends **relevance + recency**.
 - Triggering CoT: append "Reason step by step" / "Think step by step" / a structured `Reasoning:` + `Final Answer:` format.
 - CoT improves accuracy on multi-step problems (e.g. the "17 sheep, all but 9 run away" trick question) by forcing intermediate reasoning before the answer.
 
+
 ---
 
 ## Cross-cutting patterns seen throughout
@@ -147,3 +148,102 @@ An agent that remembers past interactions and blends **relevance + recency**.
 - **Embeddings are the common currency** for RAG, memory, and similarity search.
 - **`text-embedding-3-small`** (1536-d) and **`gpt-5-mini`** are the default models used.
 - Progression of the course: raw HTTP → LLM calls → prompting → tokens/embeddings → RAG → short/long-term memory → vector DBs → episodic memory → reasoning (CoT).
+
+
+---
+
+## 10. ReAct Reasoning Agents — `12_react_reasoning_agent.py`
+
+- **ReAct** = "Reason + Act".
+- The agent alternates between a reasoning step and an action step:
+  - `Thought:` explains what it should do,
+  - `Action:` calls a tool such as `calculate[...]` or `lookup[...]`,
+  - `Observation:` receives the tool output,
+  - `Final Answer:` summarizes the result.
+- This pattern is useful when the model needs external information or computation before it can answer reliably.
+- The key idea is that the LLM does not just produce an answer; it can pause, use tools, and continue reasoning.
+
+---
+
+## 11. Planning + Reactive Loop — `13_planning_reactiveloop_agent`
+
+- This module combines two ideas:
+  - **Planning**: break a complex request into subtasks first.
+  - **Reactive execution**: after planning, the agent executes relevant actions (for example, a calculator or knowledge lookup).
+- A planning agent often improves reliability because it decomposes the task before acting.
+- The simple loop here shows how an agent can move from “understand the task” → “choose tool” → “observe result” → “answer”.
+
+---
+
+## 12. Tool Use in Agentic AI — `14_tools_agentic_ai.py`
+
+- A **tool** is a callable function exposed to an LLM so it can interact with the world.
+- Tools are wrapped and described to the model so it can decide when to use them.
+- Examples in the lab:
+  - `Calculator` for math expressions,
+  - `Joke` for generating a humorous reply,
+  - `Location` for looking up location metadata.
+- A tool-enabled agent is more capable than a plain chat model because it can reason with real-world actions and structured outputs.
+
+---
+
+## 13. Building a Custom Agent Tool — `15_custom_agent_tool.py`
+
+- Custom tools make agent behavior more reusable and reliable.
+- The module introduces a **StructuredTool** with:
+  - a clear `name`,
+  - a helpful `description`,
+  - an input schema (via Pydantic),
+  - and a Python function implementation.
+- A good tool design is explicit and constrained: the model should know exactly when to use it and what inputs it expects.
+- This is an important step from “chatbot” to “agent”, because the model can now call specialized functions instead of relying only on prompt-based guessing.
+
+---
+
+## 14. Tool Safety Controls — `16_tools_with_safety_controls.py`
+
+- Safety controls prevent the agent from misusing tools or causing harm.
+- The lab adds several layers:
+  - **AST-based safe calculator** instead of raw `eval()`;
+  - **URL allowlist** so only approved domains can be fetched;
+  - **size cap** to avoid huge or hostile responses;
+  - **rate limiting** to prevent repeated requests;
+  - **circuit breaker** to stop repeated failures;
+  - **prompt-injection guard** to detect suspicious instructions in payloads.
+- This is a core lesson for real-world agents: tool access should be guarded by policy, not just trust.
+
+---
+
+## 15. Single vs Multi-Agent Simulation — `17_single_multi_agent.py`
+
+- This lab compares two styles of problem solving:
+  - a **single agent** that handles research, planning, and critique in one pass,
+  - versus a **multi-agent system** with separate roles such as Researcher, Planner, and Critic.
+- The shared memory structure is a **blackboard**: each agent reads and writes information into the same context.
+- The main lesson is that multi-agent setups can improve diversity and specialization, but they also introduce coordination overhead and possible disagreement.
+
+---
+
+## 16. Agent Communication Protocols — `18_agent_communication.py`
+
+- This module formalizes how agents talk to one another.
+- It introduces a simple **message bus** and **mailboxes** so messages can be routed between agents.
+- The three communication patterns are:
+  - **Request/Reply** for direct task execution,
+  - **Publish/Subscribe** for broadcast-style updates,
+  - **Negotiation** for proposal/counter-offer/accept/confirm flows.
+- A key idea is that communication is not just free-form text; it follows structured protocols and can be validated.
+- The code also includes a lightweight policy guard to restrict which roles may send certain message types and to block suspicious payloads.
+
+---
+
+## 17. Emergent Behavior in Multi-Agent Systems — `19_agent_emergent_behaviour.py`
+
+- Emergent behavior appears when multiple agents interact with each other without tightly scripted coordination.
+- In this lab, agents with different personalities (Optimist, Skeptic, Mediator) produce a conversation that may show:
+  - collaboration,
+  - conflict,
+  - compromise,
+  - or surprising group dynamics.
+- The interesting part is that the system-level behavior is not explicitly coded in each agent; it emerges from their interactions.
+- This is a useful way to study how multi-agent systems can become more creative, more robust, or more unstable depending on the setup.
